@@ -42,17 +42,7 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 }
 
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg){
-    printf("%s %s\n", msg->topic, (char *)msg->payload);
-    if(strcmp(msg->topic,"device_change_status") == 0) {
-        if(strcmp(msg->payload,"ON") == 0) {
-            strcpy(device_status,"ON");
-            publish(mosq,"device_changed_status","Device status changed from OFF to ON");
-        } else if(strcmp(msg->payload,"OFF") == 0) {
-            strcpy(device_status,"OFF");
-            publish(mosq,"device_changed_status","Device status changed from ON to OFF");
-        }    
-    }
-
+    printf("%s %s\n", msg->topic, (char *)msg->payload)
 }
 
 
@@ -95,7 +85,7 @@ int main() {
 		return 1;
 	}
     
-    subscribe(mosq,"device_change_status");
+    subscribe(mosq,"cmnd/test123/POWER");
     while(1) {}
     mosquitto_lib_cleanup();
 

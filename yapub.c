@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "yapub.h"
 
 #ifndef UNUSED
 #  define UNUSED(A) (void)(A)
@@ -18,8 +19,8 @@
     5. clean up and exit 
 */
 
-void on_connect(struct mosquitto *mosq, void *obj, int reason_code){
-    printf("on_connect: %s\n", mosquitto_connack_string(reason_code));
+void on_connect_pub(struct mosquitto *mosq, void *obj, int reason_code){
+    printf("on_connect_pub: %s\n", mosquitto_connack_string(reason_code));
     if(reason_code != 0){
 		mosquitto_disconnect(mosq);
 	}
@@ -46,13 +47,10 @@ void publish_something(struct mosquitto *mosq) {
 	}
 }
 
-int main(int argc, char *argv[]) {
+int main() {
     struct mosquitto *mosq;
     int rc;
 
-    UNUSED(argc);
-    UNUSED(argv);
-    
     mosquitto_lib_init();
 
 	mosq = mosquitto_new(NULL,true,NULL);
@@ -61,18 +59,18 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-    mosquitto_connect_callback_set(mosq,on_connect);
+    mosquitto_connect_callback_set(mosq,on_connect_pub);
     mosquitto_publish_callback_set(mosq,on_publish);
 
     
-	rc = mosquitto_connect(mosq, "test.mosquitto.org", 1883, 60);
+	rc = mosquitto_connect(mosq, "localhost", 1883, 60);
 	if(rc != MOSQ_ERR_SUCCESS){
 		mosquitto_destroy(mosq);
 		fprintf(stderr, "Error: %s\n", mosquitto_strerror(rc));
 		return 1;
 	}
 
-    // loop should actually be on a separate thread
+    
     rc = mosquitto_loop_start(mosq);
 	if(rc != MOSQ_ERR_SUCCESS){
 		mosquitto_destroy(mosq);

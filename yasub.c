@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "yasub.h"
 
 #ifndef UNUSED
 #  define UNUSED(A) (void)(A)
@@ -60,12 +61,9 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
     printf("%s %d %s\n", msg->topic, msg->qos, (char *)msg->payload);
 }
 
-int main(int argc,char *argv[]) {
+int main() {
     int rc;
     struct mosquitto *mosq;
-
-    UNUSED(argc);
-    UNUSED(argv);
 
     mosquitto_lib_init();
 
@@ -79,14 +77,20 @@ int main(int argc,char *argv[]) {
     mosquitto_subscribe_callback_set(mosq,on_subscribe);
     mosquitto_message_callback_set(mosq,on_message);
         
-    rc = mosquitto_connect(mosq, "test.mosquitto.org", 1883, 60);
+    rc = mosquitto_connect(mosq, "localhost", 1883, 60);
     if(rc != MOSQ_ERR_SUCCESS){
 		mosquitto_destroy(mosq);
 		fprintf(stderr, "Error: %s\n", mosquitto_strerror(rc));
 		return 1;
 	}
 
-    mosquitto_loop_forever(mosq, -1, 1);
+    mosquitto_loop_start(mosq);
+	printf("Press Enter to quit...\n");
+	getchar();
+	mosquitto_loop_stop(mosq, true);
+
+	mosquitto_disconnect(mosq);
+	mosquitto_destroy(mosq);
 	mosquitto_lib_cleanup();
 
     return 0;

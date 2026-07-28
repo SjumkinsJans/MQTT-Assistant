@@ -1,5 +1,5 @@
 all:
-	gcc main.c yasub.c yapub.c -lmosquitto -lpthread -o main yasub yapub
+	gcc main.c cJSON.c -lmosquitto -lpthread -o main
 
 clean:
-	rm main yasub yapub
+	rm main

@@ -52,7 +52,7 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 }
 
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg){
-    printf("Received msg : %s %s\n", msg->topic,(char *)msg->payload);
+    printf("Received msg : %s %s\n\n", msg->topic,(char *)msg->payload);
     if(strncmp(msg->topic,"tasmota/discovery",17)==0) {
         //check if it is config topic
         int last_ind = strlen(msg->topic)-1;
@@ -77,12 +77,11 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
                 cJSON *dn = cJSON_GetObjectItem(json, "dn");
                 printf("Parsing dn\n");
                 cJSON *fn = cJSON_GetObjectItem(json, "fn"); // an array
-                for(int j = 0;j < 7;j++) {
+                for(int j = 0;j < 8;j++) {
                     cJSON *fname = cJSON_GetArrayItem(fn,j);
-                    if(cJSON_IsString(fname)) {
+                    if(!cJSON_IsNull(fname)) {
                         printf("%s\n",fname->valuestring);
-                    } else {
-                        break;
+                        strcpy(devices[i].fn[j],fname->valuestring);
                     }
                 }
                 
@@ -111,31 +110,16 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 
     if(strncmp(msg->topic,"stat",4)){
         // Get power value
+        printf("%s\n",(char *)msg->payload);
         printf("Power Changed : %s\n",(char *)msg->payload);
         return;
     }
-}
 
-void print_device_list(struct Device *devices,int max_device_count) {
-    printf("Printing device list : \n");
-    for(int i = 0;i < max_device_count;i++) {
-        if(devices[i].subscribed == true) {
-            printf("============\n");
-            printf("t : %s\n",devices[i].t);
-            printf("Device name : %s\n",devices[i].dn);
-            printf("============\n");
-        }
-    }
-    return;
-}
+    if(strncmp(msg->topic,"tele",4)) {
 
-void init_devices(struct Device* devices,int max_device_count) {
-    for(int i = 0;i < max_device_count;i++) {
-        for(int j = 0;j < 8;j++) {
-            strcpy(devices[i].fn[j],"");
-        }
     }
 }
+
 
 // mosq topic payload
 int main() {
@@ -153,14 +137,22 @@ int main() {
 		return 1;
 	}
 
-    mosquitto_username_pw_set(mosq,"alex","3RrG-+H+WG");
-
     mosquitto_connect_callback_set(mosq,on_connect);
     mosquitto_message_callback_set(mosq,on_message);
     mosquitto_publish_callback_set(mosq,on_publish);
     mosquitto_subscribe_callback_set(mosq,on_subscribe);
 
-    rc = mosquitto_connect(mosq,"e.tgt.lv",1883,60);
+    // connect to broker
+    char info[4][128];
+    int ans = get_broker_info(info);
+    if(ans == -1) {
+        return -1;
+    }
+    if(strcmp(info[0],"") !=0 && strcmp(info[1],"") !=0) {
+        mosquitto_username_pw_set(mosq,info[0],info[1]);
+    }
+    
+    rc = mosquitto_connect(mosq,info[2],atoi(info[3]),60);
 
     if(rc != MOSQ_ERR_SUCCESS){
 		mosquitto_destroy(mosq);
@@ -195,25 +187,21 @@ int main() {
 
         fgets(input, sizeof(input), stdin);
 
-        int count = sscanf(input, "%s %s %s %s",
-                           topic, dev_id, command, payload);
+        int count = sscanf(input, "%s %s %s", dev_id, command, payload);
 
-        if(count < 3)
+        if(count < 2)
             continue;
 
-        if(strcmp(topic,"cmnd") == 0) {
-            sprintf(topic, "cmnd/%s/%s", dev_id, command);
-        }
-        else if(strcmp(topic,"stat") == 0) {
-            sprintf(topic, "stat/%s/%s", dev_id, command);
-        }
-
-        if(count == 4)
+        sprintf(topic, "cmnd/%s/%s", dev_id, command);
+        
+        if(count == 3)
             printf("Payload: %s\n", payload);
         else
             printf("Payload is empty\n");
 
-        publish(mosq, topic, count == 4 ? payload : "");
+        printf("%s",topic);
+        // all commands are sent to topic cmnd/#
+        publish(mosq, topic, count == 3 ? payload : "");
     }
 
     mosquitto_lib_cleanup();

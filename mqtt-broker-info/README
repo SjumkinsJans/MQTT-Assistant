@@ -1,0 +1,8 @@
+Add a txt file in this folder with following configuration :
+* - mandatory field
+No spaces (' ') in any of the fields !
+
+username (your username)
+password (you password)
+*host (your host, default is localhost)
+*port (your port, 1883 is default)

@@ -1,5 +1,5 @@
 all:
-	gcc main.c cJSON.c -lmosquitto -lpthread -o main
+	gcc main.c cJSON/cJSON.c mqtt-broker-info/broker_info.c -lmosquitto -o main
 
 clean:
 	rm main

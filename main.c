@@ -77,11 +77,15 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
                 cJSON *dn = cJSON_GetObjectItem(json, "dn");
                 printf("Parsing dn\n");
                 cJSON *fn = cJSON_GetObjectItem(json, "fn"); // an array
+
+                create_dir("devices");
+                create_file(t->valuestring,dn->valuestring);
                 for(int j = 0;j < 8;j++) {
                     cJSON *fname = cJSON_GetArrayItem(fn,j);
                     if(!cJSON_IsNull(fname)) {
                         printf("%s\n",fname->valuestring);
                         strcpy(devices[i].fn[j],fname->valuestring);
+                        add_relay_name(t->valuestring,fname->valuestring,i+1);
                     }
                 }
                 
@@ -175,6 +179,8 @@ int main() {
     sleep(1);
     print_device_list(devices,max_device_count);
     // subscribe to topic of every device
+    // subscribe to assistants topic
+    subscribe(mosq,"assistant");
 
     //topic device_id payload
     while(1) {

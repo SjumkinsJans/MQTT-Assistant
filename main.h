@@ -5,9 +5,10 @@
 #include <unistd.h>
 #include "cJSON/cJSON.h"
 #include "mqtt-broker-info/broker_info.h"
+#include "devices/device_name_control.h"
 
 struct Device {
-    char t[17];         // mac addr last 6 syms
+    char t[32];         // mac addr last 6 syms
     char dn[32];        // device name
     char fn[8][32];     // friendly name
                         // add user defined names ?

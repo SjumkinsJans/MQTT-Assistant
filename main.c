@@ -52,7 +52,9 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 }
 
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg){
-    printf("Received msg : %s %s\n\n", msg->topic,(char *)msg->payload);
+    fflush(stdout);
+    printf("Receiveddd msg : %s %s\n\n", msg->topic,(char *)msg->payload);
+    fflush(stdout);
     if(strncmp(msg->topic,"tasmota/discovery",17)==0) {
         //check if it is config topic
         int last_ind = strlen(msg->topic)-1;
@@ -189,7 +191,7 @@ int main() {
         char topic[128] = "";
         char dev_id[32] = "";
         char command[32] = "";
-        char payload[32] = "";
+        char payload[128] = "";
 
         fgets(input, sizeof(input), stdin);
 

@@ -1,7 +1,7 @@
  To save up on opening a lot of files for reading , all names of a single device, including names of the devices' relays, are saved in a signle separate file.
  Devices are saved in devices/devices
  Name of the file should simply be the last 6 symbols of devices' MAC (in mosquitto tasmota/discovery/#/config.json it is the parameter t)
-An example of how file is such a device name list is configured :
+An example of how file in such a device name list is configured :
 
 //Note - Relay 1 is the default relay and can be called upon with commands like POWER and POWER1 ! It is the default
 

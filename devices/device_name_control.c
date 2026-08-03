@@ -25,7 +25,7 @@ int create_file(char * filename,char * device_name) {
             printf("Couldn't create file for %s!\n",filename);
             return -1;
         }
-        fprintf(ptr,"DEVICE %s \nDEVICE NAME %s \n\n",filename,device_name);
+        fprintf(ptr,"DEVICE %s\nDEVICE NAME %s\n\n",filename,device_name);
         for(int i = 1;i < 9;i++) {
             fprintf(ptr,"*RELAY%d\n\n",i);
         }
@@ -50,20 +50,20 @@ int add_relay_name(char * t,char * name,int relay) {
     int star;
     char buff[128];
     char nr_buff[2];
+    char check[5] = "RELAY";
     while((star = fgetc(ptr)) != EOF) {
-        if(star == '*') {
-            for(int i = 0;i < 8;i++) {
-                fscanf(ptr,"%7s",buff);
-                printf("buff : %s nr_buff : %c \n",buff,buff[6]);
-                if(strcmp(buff,"RELAY") == 0 && buff[6] == relay+48) {
-                    //fseek(ptr, 0, SEEK_CUR);
-                    //fprintf(ptr,"%s\n",name);
-                } else {
-                    continue;
-                }
+        fscanf(ptr,"%s",buff);
+        if(buff[0] == '*') {
+            for(int i = 0;i < 6;i++) {
+               if(buff[i] != check[i]) {
+                   break;
+               }
+               if(buff[6] != relay + '0') {
+                   break;
+               }
             }
-        } else {
-            continue;
+            //look for a free spot 8 times. If not found, return -1
+            printf("%s\n",buff);
         }
     }
     

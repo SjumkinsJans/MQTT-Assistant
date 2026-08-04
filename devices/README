@@ -11,13 +11,13 @@ Contents of the file :
 DEVICE *t*
 DEVICE_NAME 
 
-#RELAY_1:
+*RELAY1:
 relay_name_1
 relay_name_2
 ...
 relay_name_8
 
-#RELAY_2:
+*RELAY2:
 relay_name_1
 relay_name_2
 ...
@@ -25,7 +25,7 @@ relay_name_8
 
 ............
 
-#RELAY_8:
+*RELAY8:
 relay_name_1
 relay_name_2
 ...

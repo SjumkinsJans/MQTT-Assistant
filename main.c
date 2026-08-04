@@ -52,7 +52,6 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 }
 
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg){
-    fflush(stdout);
     printf("Receiveddd msg : %s %s\n\n", msg->topic,(char *)msg->payload);
     fflush(stdout);
     if(strncmp(msg->topic,"tasmota/discovery",17)==0) {
@@ -61,15 +60,15 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
         char conf[6] = "config";
         int j = 5;
         for(int i = last_ind;i > last_ind-6;i--) {
-            printf("%c %c \n",msg->topic[i],conf[j]);
+            //printf("%c %c \n",msg->topic[i],conf[j]);
             if(conf[j] == msg->topic[i]) {
                 j--;
                 continue;
             }
-            printf("Isn't a config\n");
+            //printf("Isn't a config\n");
             return;
         }
-        printf("Is a config\n");
+        //printf("Is a config\n");
         for(int i = 0;i < max_device_count;i++) {
             if(devices[i].subscribed == false) {
                 cJSON *json = cJSON_Parse((char *)msg->payload);
@@ -87,7 +86,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
                     if(!cJSON_IsNull(fname)) {
                         printf("%s\n",fname->valuestring);
                         strcpy(devices[i].fn[j],fname->valuestring);
-                        add_relay_name(t->valuestring,fname->valuestring,i+1);
+                        add_relay_name(t->valuestring,fname->valuestring,j+1);
                     }
                 }
                 

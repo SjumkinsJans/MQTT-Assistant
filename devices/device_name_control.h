@@ -5,6 +5,10 @@
 #include <unistd.h>
 #include <sys/stat.h>
 
+#define MAX_LINES 80
+#define MAX_LINE_LEN 64
+
+
 struct device_name_pair {
     char t[32];
     int relay;

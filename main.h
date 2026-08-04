@@ -9,8 +9,8 @@
 
 struct Device {
     char t[32];         // mac addr last 6 syms
-    char dn[32];        // device name
-    char fn[8][32];     // friendly name
+    char dn[64];        // device name
+    char fn[8][64];     // friendly name
                         // add user defined names ?
                         // add relay counter ? or count manually each time ?
     bool subscribed;    // is it currently subscribed to broker ?

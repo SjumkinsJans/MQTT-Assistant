@@ -4,9 +4,11 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
 #define MAX_LINES 80
 #define MAX_LINE_LEN 64
+#define RELAY_COUNT 8
 
 
 struct device_name_pair {
@@ -15,7 +17,19 @@ struct device_name_pair {
     char name[32];
 };
 
+struct Device {
+    char t[32];         // mac addr last 6 syms
+    char dn[64];        // device name
+    char fn[8][64];     // friendly name
+                        // add user defined names ?
+                        // add relay counter ? or count manually each time ?
+    bool subscribed;    // is it currently subscribed to broker ?
+};
+
 int create_dir();
 int create_file(char * filename,char * device_name);
 int check_file_exist(char * dir,char * filename);
-int add_relay_name(char * t,char * name,int relay);
+int add_relay_name(char * t,char * name,int relay,struct device_name_pair *pairs,int max_pairs);
+void init_device_name_pair(struct device_name_pair *pairs,struct Device *devices,int max_pairs,int device_count);
+void print_device_name_pair(struct device_name_pair *arr,int max_pairs);
+int check_name_availability(char *name,struct device_name_pair *pairs,int max_pairs);

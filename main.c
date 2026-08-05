@@ -1,6 +1,7 @@
 #include "main.h"
 
 struct Device *devices;
+struct device_name_pair *device_name;
 int max_device_count;
 int curr_device_count;
 
@@ -86,7 +87,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
                     if(!cJSON_IsNull(fname)) {
                         printf("%s\n",fname->valuestring);
                         strcpy(devices[i].fn[j],fname->valuestring);
-                        add_relay_name(t->valuestring,fname->valuestring,j+1);
+                        //add_relay_name(t->valuestring,fname->valuestring,j+1);
                     }
                 }
                 
@@ -101,7 +102,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
                 char subscribe_to[64];
                 snprintf(subscribe_to,sizeof(subscribe_to),"+/%s/#",t->valuestring);
                 subscribe(mosq,subscribe_to);
-
+                curr_device_count++;
                 // Map names to ids' ?
                 
                 // Notify about new device
@@ -183,8 +184,20 @@ int main() {
     // subscribe to assistants topic
     subscribe(mosq,"assistant");
 
+    
+    // read all names given to devices and save them to aray
+    device_name = (struct device_name_pair*)calloc(MAX_LINES*max_device_count,sizeof(struct device_name_pair));
+    init_device_name_pair(device_name,devices,MAX_LINES*max_device_count,curr_device_count);
+    
+    add_relay_name("E98300","pooooooool",7,device_name,MAX_LINES*max_device_count);
+    add_relay_name("EE72C4","pooooooool",8,device_name,MAX_LINES*max_device_count);
+
+
+    print_device_name_pair(device_name,MAX_LINES*max_device_count);
+
     //topic device_id payload
     while(1) {
+        //printf("%d - dev count \n",curr_device_count);
         printf("Awaiting command : \n");
         char input[256];
         char topic[128] = "";
@@ -213,5 +226,6 @@ int main() {
 
     mosquitto_lib_cleanup();
     free(devices);
+    free(device_name);
     return 0;
 }

@@ -7,15 +7,6 @@
 #include "mqtt-broker-info/broker_info.h"
 #include "devices/device_name_control.h"
 
-struct Device {
-    char t[32];         // mac addr last 6 syms
-    char dn[64];        // device name
-    char fn[8][64];     // friendly name
-                        // add user defined names ?
-                        // add relay counter ? or count manually each time ?
-    bool subscribed;    // is it currently subscribed to broker ?
-};
-
 void print_device_list(struct Device *devices,int max_device_count) {
     printf("Printing device list : \n");
     for(int i = 0;i < max_device_count;i++) {

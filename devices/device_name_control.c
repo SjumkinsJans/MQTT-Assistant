@@ -42,7 +42,6 @@ int create_file(char * filename,char * device_name) {
     return 0;
 }
 
-
 int get_file_content(char * filename, char lines[MAX_LINES][MAX_LINE_LEN]) {
     char buff[128];
     sprintf(buff,"devices/devices/%s.txt",filename); 
@@ -83,7 +82,7 @@ void init_device_name_pair(struct device_name_pair *pairs,struct Device *devices
             continue;
         }
 
-        // skip 3 lines + skip until you are on relay you need
+        
         char buff[128];
         int current_relay;
         while(fgets(buff,MAX_LINE_LEN,ptr) && buff[0] != '#') {
@@ -140,6 +139,9 @@ int check_name_availability(char *name,struct device_name_pair *pairs,int max_pa
 // finish this tommorow :)
 // should also check whether the name is already taken by some device
 int add_relay_name(char * t,char * name,int relay,struct device_name_pair *pairs,int max_pairs) {
+    if(relay > 8 || relay < 1) {
+        return -1;
+    }
     //check name availability
     if(check_name_availability(name,pairs,max_pairs) == -1 ) {
         return -1;
@@ -196,5 +198,75 @@ int add_relay_name(char * t,char * name,int relay,struct device_name_pair *pairs
             break;
         }
     }
+    return 0;
+}
+
+//returns the index of a name in pairs array if it exists in it.
+int find_relay_name(char * name,struct device_name_pair *pairs,int max_pairs) {
+    for(int i = 0;i < max_pairs;i++) {
+        if(strcmp(name,pairs[i].name) == 0) {
+            printf("Name %s belongs to %s relay %d \n",pairs[i].name,pairs[i].t,pairs[i].relay);
+            return i;
+        }
+    }
+    printf("Name %s coudln't be found !\n",name);
+    return -1;
+}
+
+int remove_relay_name(char * name,struct device_name_pair *pairs,int max_pairs) {
+    int pos = find_relay_name(name,pairs,max_pairs);
+    if(pos == -1) {
+        return -1;
+    }
+
+    char lines[MAX_LINES][MAX_LINE_LEN];
+    int count = get_file_content(pairs[pos].t,lines);
+    printf("%d\n",count);
+    if(count == -1) {
+        return -1;
+    }
+
+    int name_len = strlen(name);
+    int found = 0;
+    int index;
+    for(int i = 0;i < count;i++) {
+         for(int j = 0;j < name_len;j++) {
+            if(lines[i][j] != name[j]) {
+                break;
+            }
+            found = 1;
+         }
+         if(found) {
+            index = i;
+            break;
+         }
+    }
+    if(!found) {
+        printf("Couldn't find name to  remove ! \n");
+        return -1;
+    }
+    printf("Name found !\n");
+    for(int i = index;i < count;i++) {
+        strcpy(lines[i],lines[i+1]);
+    }
+
+    char path[64];
+    sprintf(path,"devices/devices/%s.txt",pairs[pos].t);
+    FILE *ptr = fopen(path,"w");
+    if(ptr == NULL) {
+        printf("Couldn't open a file %s\n", pairs[pos].t);
+        return -1;
+    }
+    
+    for(int i = 0;i < MAX_LINES;i++) {
+        fprintf(ptr,"%s",lines[i]);
+    }
+    fclose(ptr);
+
+    //also delete from pairs. Or, rather, make the spot free to take
+    strcpy(pairs[pos].name,"");
+    pairs[pos].relay = 0;
+    strcpy(pairs[pos].t,"");
+
     return 0;
 }

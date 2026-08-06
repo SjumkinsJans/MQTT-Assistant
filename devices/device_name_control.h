@@ -29,7 +29,9 @@ struct Device {
 int create_dir();
 int create_file(char * filename,char * device_name);
 int check_file_exist(char * dir,char * filename);
-int add_relay_name(char * t,char * name,int relay,struct device_name_pair *pairs,int max_pairs);
 void init_device_name_pair(struct device_name_pair *pairs,struct Device *devices,int max_pairs,int device_count);
 void print_device_name_pair(struct device_name_pair *arr,int max_pairs);
 int check_name_availability(char *name,struct device_name_pair *pairs,int max_pairs);
+int add_relay_name(char * t,char * name,int relay,struct device_name_pair *pairs,int max_pairs);
+int find_relay_name(char * name,struct device_name_pair *pairs,int max_pairs);
+int remove_relay_name(char * name,struct device_name_pair *pairs,int max_pairs);

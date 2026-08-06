@@ -54,7 +54,8 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg){
     printf("Receiveddd msg : %s %s\n\n", msg->topic,(char *)msg->payload);
-    fflush(stdout);
+    
+    //device discovery
     if(strncmp(msg->topic,"tasmota/discovery",17)==0) {
         //check if it is config topic
         int last_ind = strlen(msg->topic)-1;
@@ -114,18 +115,97 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
         return;
     }
 
-    if(strncmp(msg->topic,"stat",4)){
+    // commands for now :
+    // name *t* *name*
+    if(strncmp(msg->topic,"assistant",9) == 0) {
+        printf("Command received yo !\n");
+        //printf("Receiveddd msg : %s %s\n\n", msg->topic,(char *)msg->payload);
+        
+        //command , relay_name
+        // включить *имя*
+        // выключить *имя*
+        // назвать *t* *relay* *имя* . 
+        // забыть *имя*
+        char message[256];
+        strcpy(message,(char*)msg->payload);
+        //printf("Payload : %s\n",message);
+        char *command = strtok(message," ");
+        printf("Command : %s\n",command);
+        //printf("назвать strcmp : %d",strcmp("назвать",command));
+        if(strcmp("включить",command) == 0 || strcmp("turnon",command) == 0) {
+            char *name = strtok(NULL,"");
+            int pos = find_relay_name(name,device_name,MAX_LINES*max_device_count);
+            if(pos == -1) {
+                return;
+            }
+            char topic[256];
+            sprintf(topic,"cmnd/%s/POWER%d",device_name[pos].t,device_name[pos].relay);
+            publish(mosq,topic,"ON");
+            return;
+        }
+
+        if(strcmp("выключить",command)  == 0 || strcmp("turnoff",command) == 0) {
+            char *name = strtok(NULL,"");
+            int pos = find_relay_name(name,device_name,MAX_LINES*max_device_count);
+            if(pos == -1) {
+                return;
+            }
+            char topic[256];
+            sprintf(topic,"cmnd/%s/POWER%d",device_name[pos].t,device_name[pos].relay);
+            publish(mosq,topic,"OFF");
+            return;
+        }
+
+        if(strcmp("назвать",command)  == 0 || strcmp("name",command) == 0) {
+
+            char *t = strtok(NULL," ");
+            char *name = strtok(NULL,"");
+            printf("%s | %s\n",t,name);
+            int relay = 1;
+            if(name[0] >= '0' && name[0] <= '8') {
+                printf("Parsing relay\n");
+                relay = name[0]-'0';
+                printf("Relay : %d\n",relay);
+                char *asd = strtok(name," ");
+                asd = strtok(NULL,"");
+                strcpy(name,asd);
+            }
+            printf("%s %s %d\n",t,name,relay);
+            add_relay_name(t,name,relay,device_name,MAX_LINES*max_device_count);
+
+            return;
+        }
+
+        if(strcmp("забыть",command)  == 0 || strcmp("forget",command) == 0) {
+            char *name = strtok(NULL," ");
+            remove_relay_name(name,device_name,MAX_LINES*max_device_count);
+            return;
+        }
+        
+    }
+
+    //answers from broker.
+    if(strncmp(msg->topic,"stat",4) == 0){
         // Get power value
         printf("%s\n",(char *)msg->payload);
         printf("Power Changed : %s\n",(char *)msg->payload);
         return;
     }
 
-    if(strncmp(msg->topic,"tele",4)) {
+    if(strncmp(msg->topic,"tele",4) == 0) {
 
     }
+
+    
 }
 
+void find_command() {
+
+}
+
+void execute_command() {
+
+}
 
 // mosq topic payload
 int main() {
@@ -182,46 +262,31 @@ int main() {
     print_device_list(devices,max_device_count);
     // subscribe to topic of every device
     // subscribe to assistants topic
-    subscribe(mosq,"assistant");
+    subscribe(mosq,"assistant/#");
 
     
     // read all names given to devices and save them to aray
     device_name = (struct device_name_pair*)calloc(MAX_LINES*max_device_count,sizeof(struct device_name_pair));
     init_device_name_pair(device_name,devices,MAX_LINES*max_device_count,curr_device_count);
-    
-    add_relay_name("E98300","pooooooool",7,device_name,MAX_LINES*max_device_count);
-    add_relay_name("EE72C4","pooooooool",8,device_name,MAX_LINES*max_device_count);
-
-
-    print_device_name_pair(device_name,MAX_LINES*max_device_count);
 
     //topic device_id payload
     while(1) {
         //printf("%d - dev count \n",curr_device_count);
         printf("Awaiting command : \n");
         char input[256];
-        char topic[128] = "";
-        char dev_id[32] = "";
-        char command[32] = "";
-        char payload[128] = "";
+        //make a config file for assistant later :)
+        // maybe include it in mqtt-broker.txt 
+        char topic[] = "assistant";
 
-        fgets(input, sizeof(input), stdin);
-
-        int count = sscanf(input, "%s %s %s", dev_id, command, payload);
-
-        if(count < 2)
-            continue;
-
-        sprintf(topic, "cmnd/%s/%s", dev_id, command);
+        if (fgets(input, sizeof(input), stdin) != NULL) {
+            // Remove trailing newline
+            input[strcspn(input, "\n")] = '\0';
         
-        if(count == 3)
-            printf("Payload: %s\n", payload);
-        else
-            printf("Payload is empty\n");
+            printf("You entered: '%s'\n", input);
+        }
 
-        printf("%s",topic);
         // all commands are sent to topic cmnd/#
-        publish(mosq, topic, count == 3 ? payload : "");
+        publish(mosq, topic, input);
     }
 
     mosquitto_lib_cleanup();

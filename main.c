@@ -2,8 +2,10 @@
 
 struct Device *devices;
 struct device_name_pair *device_name;
+struct Command *command_list;
 int max_device_count;
 int curr_device_count;
+int command_count;
 
 void publish(struct mosquitto *mosq,char topic[],char payload[]){
     int rc;
@@ -39,7 +41,7 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 
     // connect to topics
     for(i=0; i<qos_count; i++){
-		printf("on_subscribe: %d:granted qos = %d\n", i, granted_qos[i]);
+		//printf("on_subscribe: %d:granted qos = %d\n", i, granted_qos[i]);
 		if(granted_qos[i] <= 2){
 			have_subscription = true;
 		}
@@ -74,11 +76,11 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
         for(int i = 0;i < max_device_count;i++) {
             if(devices[i].subscribed == false) {
                 cJSON *json = cJSON_Parse((char *)msg->payload);
-                printf("Parsing json\n");
+                //printf("Parsing json\n");
                 cJSON *t = cJSON_GetObjectItem(json, "t");
-                printf("Parsing t : %s\n",t->valuestring);
+                //printf("Parsing t : %s\n",t->valuestring);
                 cJSON *dn = cJSON_GetObjectItem(json, "dn");
-                printf("Parsing dn\n");
+                //printf("Parsing dn\n");
                 cJSON *fn = cJSON_GetObjectItem(json, "fn"); // an array
 
                 create_dir("devices");
@@ -86,7 +88,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
                 for(int j = 0;j < 8;j++) {
                     cJSON *fname = cJSON_GetArrayItem(fn,j);
                     if(!cJSON_IsNull(fname)) {
-                        printf("%s\n",fname->valuestring);
+                        //printf("%s\n",fname->valuestring);
                         strcpy(devices[i].fn[j],fname->valuestring);
                         //add_relay_name(t->valuestring,fname->valuestring,j+1);
                     }
@@ -118,7 +120,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
     // commands for now :
     // name *t* *name*
     if(strncmp(msg->topic,"assistant",9) == 0) {
-        printf("Command received yo !\n");
+        //printf("Command received yo !\n");
         //printf("Receiveddd msg : %s %s\n\n", msg->topic,(char *)msg->payload);
         
         //command , relay_name
@@ -199,20 +201,16 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
     
 }
 
-void find_command() {
-
-}
-
-void execute_command() {
-
-}
-
 // mosq topic payload
 int main() {
     max_device_count = 20;
     devices = (struct Device*)calloc(max_device_count,sizeof(struct Device));
     curr_device_count = 0;
     init_devices(devices,max_device_count);
+
+    command_count = 1000;
+    command_list = (struct Command*)calloc(command_count,sizeof(struct Command));
+    init_command_list(command_list,command_count);
 
     int rc;
     struct mosquitto* mosq;
@@ -259,7 +257,8 @@ int main() {
 
     //print device list
     sleep(1);
-    print_device_list(devices,max_device_count);
+    //print_device_list(devices,max_device_count);
+
     // subscribe to topic of every device
     // subscribe to assistants topic
     subscribe(mosq,"assistant/#");

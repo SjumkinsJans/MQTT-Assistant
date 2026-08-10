@@ -1,5 +1,5 @@
-#include "command_control.h"
-#define command NAME
-int name() {
+#include "../command_control.h"
 
+int name() {
+    
 }

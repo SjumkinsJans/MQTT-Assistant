@@ -5,9 +5,8 @@
 #include <unistd.h>
 #include "cJSON/cJSON.h"
 #include "mqtt-broker-info/broker_info.h"
-#include "devices/device_name_control.h"
 #include "commands/command_control.h"
-
+//#include "devices/device_name_control.h" // imported from command_control.h
 void print_device_list(struct Device *devices,int max_device_count) {
     printf("Printing device list : \n");
     for(int i = 0;i < max_device_count;i++) {

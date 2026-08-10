@@ -1,5 +1,5 @@
-#include "command_control.h"
-#define command TURN_ON
+#include "../command_control.h"
+
 int turn_on() {
     
 }

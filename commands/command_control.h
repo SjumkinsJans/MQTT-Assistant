@@ -5,14 +5,10 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <dirent.h>
+#include <dlfcn.h>
+#include "../mqtt-broker-info/broker_info.h"
+#include "../devices/device_name_control.h"
 
-enum comm_id {
-    FORGET = 1,
-    NAME = 2,
-    TURN_ON = 3,
-    TURN_OFF = 4
-};
 
 struct Command {
     char command_variant[32];
@@ -20,5 +16,5 @@ struct Command {
 };
 
 void init_command_list(struct Command *command_list,int command_count);
-
-void get_commands(struct Command *command_list,int command_count);
+int load_command(char *name,int i);
+void traverse_dirs(char *path);

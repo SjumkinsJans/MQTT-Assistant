@@ -2,9 +2,9 @@
 
 struct Device *devices;
 struct device_name_pair *device_name;
-struct Command *command_list;
 int max_device_count;
 int curr_device_count;
+struct Command *command_list;
 int command_count;
 
 void publish(struct mosquitto *mosq,char topic[],char payload[]){
@@ -131,58 +131,68 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
         char message[256];
         strcpy(message,(char*)msg->payload);
         //printf("Payload : %s\n",message);
-        char *command = strtok(message," ");
-        printf("Command : %s\n",command);
+        //char *command = strtok(message," ");
+        
+        for(int i = 0;i < command_count;i++) {
+            if(find_substring(message,command_list[i].command_variant) >= 0) {
+                printf("Command found: %s\n",command_list[i].command_variant);
+
+                // execute command
+                command_list[i].command(mosq,message,device_name,MAX_LINES*max_device_count);
+                break;
+            }
+        }
+
         //printf("назвать strcmp : %d",strcmp("назвать",command));
-        if(strcmp("включить",command) == 0 || strcmp("turnon",command) == 0) {
-            char *name = strtok(NULL,"");
-            int pos = find_relay_name(name,device_name,MAX_LINES*max_device_count);
-            if(pos == -1) {
-                return;
-            }
-            char topic[256];
-            sprintf(topic,"cmnd/%s/POWER%d",device_name[pos].t,device_name[pos].relay);
-            publish(mosq,topic,"ON");
-            return;
-        }
+        // if(strcmp("включить",command) == 0 || strcmp("turnon",command) == 0) {
+        //     char *name = strtok(NULL,"");
+        //     int pos = find_relay_name(name,device_name,MAX_LINES*max_device_count);
+        //     if(pos == -1) {
+        //         return;
+        //     }
+        //     char topic[256];
+        //     sprintf(topic,"cmnd/%s/POWER%d",device_name[pos].t,device_name[pos].relay);
+        //     publish(mosq,topic,"ON");
+        //     return;
+        // }
 
-        if(strcmp("выключить",command)  == 0 || strcmp("turnoff",command) == 0) {
-            char *name = strtok(NULL,"");
-            int pos = find_relay_name(name,device_name,MAX_LINES*max_device_count);
-            if(pos == -1) {
-                return;
-            }
-            char topic[256];
-            sprintf(topic,"cmnd/%s/POWER%d",device_name[pos].t,device_name[pos].relay);
-            publish(mosq,topic,"OFF");
-            return;
-        }
+        // if(strcmp("выключить",command)  == 0 || strcmp("turnoff",command) == 0) {
+        //     char *name = strtok(NULL,"");
+        //     int pos = find_relay_name(name,device_name,MAX_LINES*max_device_count);
+        //     if(pos == -1) {
+        //         return;
+        //     }
+        //     char topic[256];
+        //     sprintf(topic,"cmnd/%s/POWER%d",device_name[pos].t,device_name[pos].relay);
+        //     publish(mosq,topic,"OFF");
+        //     return;
+        // }
 
-        if(strcmp("назвать",command)  == 0 || strcmp("name",command) == 0) {
+        // if(strcmp("назвать",command)  == 0 || strcmp("name",command) == 0) {
 
-            char *t = strtok(NULL," ");
-            char *name = strtok(NULL,"");
-            printf("%s | %s\n",t,name);
-            int relay = 1;
-            if(name[0] >= '0' && name[0] <= '8') {
-                printf("Parsing relay\n");
-                relay = name[0]-'0';
-                printf("Relay : %d\n",relay);
-                char *asd = strtok(name," ");
-                asd = strtok(NULL,"");
-                strcpy(name,asd);
-            }
-            printf("%s %s %d\n",t,name,relay);
-            add_relay_name(t,name,relay,device_name,MAX_LINES*max_device_count);
+        //     char *t = strtok(NULL," ");
+        //     char *name = strtok(NULL,"");
+        //     printf("%s | %s\n",t,name);
+        //     int relay = 1;
+        //     if(name[0] >= '0' && name[0] <= '8') {
+        //         printf("Parsing relay\n");
+        //         relay = name[0]-'0';
+        //         printf("Relay : %d\n",relay);
+        //         char *asd = strtok(name," ");
+        //         asd = strtok(NULL,"");
+        //         strcpy(name,asd);
+        //     }
+        //     printf("%s %s %d\n",t,name,relay);
+        //     add_relay_name(t,name,relay,device_name,MAX_LINES*max_device_count);
 
-            return;
-        }
+        //     return;
+        // }
 
-        if(strcmp("забыть",command)  == 0 || strcmp("forget",command) == 0) {
-            char *name = strtok(NULL," ");
-            remove_relay_name(name,device_name,MAX_LINES*max_device_count);
-            return;
-        }
+        // if(strcmp("забыть",command)  == 0 || strcmp("forget",command) == 0) {
+        //     char *name = strtok(NULL," ");
+        //     remove_relay_name(name,device_name,MAX_LINES*max_device_count);
+        //     return;
+        // }
         
     }
 
@@ -207,10 +217,6 @@ int main() {
     devices = (struct Device*)calloc(max_device_count,sizeof(struct Device));
     curr_device_count = 0;
     init_devices(devices,max_device_count);
-
-    command_count = 1000;
-    command_list = (struct Command*)calloc(command_count,sizeof(struct Command));
-    init_command_list(command_list,command_count);
 
     int rc;
     struct mosquitto* mosq;
@@ -267,6 +273,14 @@ int main() {
     // read all names given to devices and save them to aray
     device_name = (struct device_name_pair*)calloc(MAX_LINES*max_device_count,sizeof(struct device_name_pair));
     init_device_name_pair(device_name,devices,MAX_LINES*max_device_count,curr_device_count);
+
+    // load in available commands
+    command_count = 0;
+    command_list = (struct Command*)calloc(1000,sizeof(struct Command));
+    init_command_list(command_list,1000);
+    traverse_dirs("./commands",command_list,&command_count);
+    printf("Command count : %d\n",command_count);
+
 
     //topic device_id payload
     while(1) {

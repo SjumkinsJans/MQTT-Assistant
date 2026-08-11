@@ -42,7 +42,7 @@ int find_substring(char * source,char * substring) {
     int ss_len = strlen(substring);
 
     if(ss_len > src_len) {
-        printf("Substring cannot be longer than source string ! \n");
+        //printf("Substring cannot be longer than source string ! \n");
         return -1;
     }
 
@@ -50,7 +50,7 @@ int find_substring(char * source,char * substring) {
         if(strcmp(source,substring) == 0) {
             return 0;
         } else {
-            printf("Substring not found !\n");
+            //printf("Substring not found !\n");
             return -1;
         }
     }
@@ -58,7 +58,7 @@ int find_substring(char * source,char * substring) {
     for(int i = 0;i <= src_len-ss_len;i++) {      
         int found = 1;
         for(int j = 0;j < ss_len;j++) {
-            printf("%c %c \n",source[i+j],substring[j]);
+            //printf("%c %c \n",source[i+j],substring[j]);
             if(source[i+j] != substring[j] ) {
                 found = 0;
                 break;

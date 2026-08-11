@@ -1,37 +1,93 @@
 #include "command_control.h"
 
+
+
+// traverse plugin folders
+// find .so files
+// use load commands on .so files
+// read command names from their .txt files
+// add pairs of {name;function}
+
+
 void init_command_list(struct Command *command_list,int command_count) {
     for(int i = 0;i < command_count;i++) {
         strcpy(command_list[i].command_variant,"");
-        command_list[i].command_id = 0;
+
     }
 }
 
+void get_command_name(char *name) {
+    int last_pos = -1;
+    int len = strlen(name);
+    
+    for(int i = 0;i < len;i++) {
+        if (name[i] == '/') {
+            last_pos = i;
+        }
+    }
 
-typedef void (*plugin_func)();
-plugin_func plugs[2];
-int load_command(char *name,int i) {
-    char path[256];
-    //sprintf(path,"./%s/%s.os",name,name);
-    sprintf(path,"./hello/%s.os",name);
+    char command[64];
+    int j = last_pos+1;
+    int pos = 0;
+    while(name[j] != '.') {
+        //printf("A\n");
+        command[pos] = name[j];
+        j++;
+        pos++;
+    }
+    command[pos] = '\0';
+    strcpy(name,command);
+}
+
+
+int load_command(char *path,struct Command *command_list,int *command_count) {
+    //printf("Path :%s \n",name);
     void *handle = dlopen(path,RTLD_LAZY);
     if(handle == NULL) {
         printf("handle ERROR %s!\n",dlerror());
         return EXIT_FAILURE;
     }
+
+    char name[128];
+    strcpy(name,path);
+    get_command_name(name);
+
     plugin_func command = dlsym(handle,name);
     if(command == NULL) {
         printf("g ERROR %s!\n",dlerror());
         return EXIT_FAILURE;
     }
 
-    plugs[i] = command;
+    // now, load all the names :)
+    size_t len = strlen(path)+2;
+    char *filename = malloc(len);
+    snprintf(filename,len-4,"%s",path);
+    sprintf(filename,"%s.txt",filename);
+    FILE *ptr = fopen(filename,"r");
+    
+    if(ptr == NULL) {
+        printf("load_command : Couldn't open a file %s\n", filename);
+        free(filename);
+        return -1;
+    }
+    
+    char command_name[64];
+    while(fgets(command_name,64,ptr)) {
+        //printf("%d %s\n",(*command_count),command_name);
+
+        command_name[strlen(command_name)-1] = '\0';
+        command_list[(*command_count)].command = command;
+        strcpy(command_list[(*command_count)].command_variant,command_name);
+        (*command_count)++;
+    }
+    free(filename);
+    fclose(ptr);
     //g();
 
     //dlclose(handle);
 }
 
-void traverse_dirs(char *path) {
+void traverse_dirs(char *path,struct Command *command_list,int *command_count) {
     DIR *dir = opendir(path);
     struct dirent *de;
     if(dir == NULL) {
@@ -64,11 +120,21 @@ void traverse_dirs(char *path) {
             continue;
         }
 
+        // check if file is .so file
         if(!S_ISDIR(path_stat.st_mode)) {
-            printf("%s\n",de->d_name);
+            int d_name_len = strlen(de->d_name);
+            if(d_name_len < 3) {
+                continue;
+            }
+          
+            if(de->d_name[d_name_len-1] != 's' || de->d_name[d_name_len-2] != 'o' || de->d_name[d_name_len-3] != '.') {
+                continue;
+            }
+            //printf("%s\n",longpath);
+            load_command(longpath,command_list,command_count);
             continue;
         }
-        traverse_dirs(longpath);
+        traverse_dirs(longpath,command_list,command_count);
         free(longpath);
     }
 
@@ -77,12 +143,16 @@ void traverse_dirs(char *path) {
     closedir(dir);
 }
 
-//typedef void (*hello)();
-int main() {
-    // load_command("hello",0);
-    // load_command("hi",1);
-
-    // plugs[0]();
-    // plugs[1]();
-    traverse_dirs(".");
-}
+// int main() {
+//     struct Command command_list[1000];
+//     int command_count = 0;
+//     init_command_list(command_list,1000);
+//     // load_command("hello",0);
+//     // load_command("hi",1);
+//     traverse_dirs(".",command_list,&command_count);
+//     printf("Command count : %d\n",command_count);
+//     for(int i = 0;i < command_count;i++) {
+//         //command_list[i].command();
+//         printf("%s\n",command_list[i].command_variant);
+//     }
+// }

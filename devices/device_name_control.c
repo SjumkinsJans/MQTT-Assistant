@@ -136,7 +136,6 @@ int check_name_availability(char *name,struct device_name_pair *pairs,int max_pa
 }
 
 // int relay should be 0 by default, if no other value is provided
-// finish this tommorow :)
 // should also check whether the name is already taken by some device
 int add_relay_name(char * t,char * name,int relay,struct device_name_pair *pairs,int max_pairs) {
     if(relay > 8 || relay < 1) {

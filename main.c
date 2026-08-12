@@ -7,14 +7,6 @@ int curr_device_count;
 struct Command *command_list;
 int command_count;
 
-void publish(struct mosquitto *mosq,char topic[],char payload[]){
-    int rc;
-    int payload_len = strlen(payload);
-    rc = mosquitto_publish(mosq,NULL,topic,payload_len,payload,2,false);
-    if(rc != MOSQ_ERR_SUCCESS){
-		fprintf(stderr, "Error publishing: %s\n", mosquitto_strerror(rc));
-	}
-}
 
 void subscribe(struct mosquitto *mosq,char topic[]) {
     int rc;
@@ -138,62 +130,10 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
                 printf("Command found: %s\n",command_list[i].command_variant);
 
                 // execute command
-                command_list[i].command(mosq,message,device_name,MAX_LINES*max_device_count);
+                command_list[i].command(mosq,message,command_list[i].command_variant,device_name,MAX_LINES*max_device_count);
                 break;
             }
         }
-
-        //printf("назвать strcmp : %d",strcmp("назвать",command));
-        // if(strcmp("включить",command) == 0 || strcmp("turnon",command) == 0) {
-        //     char *name = strtok(NULL,"");
-        //     int pos = find_relay_name(name,device_name,MAX_LINES*max_device_count);
-        //     if(pos == -1) {
-        //         return;
-        //     }
-        //     char topic[256];
-        //     sprintf(topic,"cmnd/%s/POWER%d",device_name[pos].t,device_name[pos].relay);
-        //     publish(mosq,topic,"ON");
-        //     return;
-        // }
-
-        // if(strcmp("выключить",command)  == 0 || strcmp("turnoff",command) == 0) {
-        //     char *name = strtok(NULL,"");
-        //     int pos = find_relay_name(name,device_name,MAX_LINES*max_device_count);
-        //     if(pos == -1) {
-        //         return;
-        //     }
-        //     char topic[256];
-        //     sprintf(topic,"cmnd/%s/POWER%d",device_name[pos].t,device_name[pos].relay);
-        //     publish(mosq,topic,"OFF");
-        //     return;
-        // }
-
-        // if(strcmp("назвать",command)  == 0 || strcmp("name",command) == 0) {
-
-        //     char *t = strtok(NULL," ");
-        //     char *name = strtok(NULL,"");
-        //     printf("%s | %s\n",t,name);
-        //     int relay = 1;
-        //     if(name[0] >= '0' && name[0] <= '8') {
-        //         printf("Parsing relay\n");
-        //         relay = name[0]-'0';
-        //         printf("Relay : %d\n",relay);
-        //         char *asd = strtok(name," ");
-        //         asd = strtok(NULL,"");
-        //         strcpy(name,asd);
-        //     }
-        //     printf("%s %s %d\n",t,name,relay);
-        //     add_relay_name(t,name,relay,device_name,MAX_LINES*max_device_count);
-
-        //     return;
-        // }
-
-        // if(strcmp("забыть",command)  == 0 || strcmp("forget",command) == 0) {
-        //     char *name = strtok(NULL," ");
-        //     remove_relay_name(name,device_name,MAX_LINES*max_device_count);
-        //     return;
-        // }
-        
     }
 
     //answers from broker.

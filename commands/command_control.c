@@ -8,7 +8,6 @@
 // read command names from their .txt files
 // add pairs of {name;function}
 
-
 void init_command_list(struct Command *command_list,int command_count) {
     for(int i = 0;i < command_count;i++) {
         strcpy(command_list[i].command_variant,"");
@@ -142,17 +141,3 @@ void traverse_dirs(char *path,struct Command *command_list,int *command_count) {
     
     closedir(dir);
 }
-
-// int main() {
-//     struct Command command_list[1000];
-//     int command_count = 0;
-//     init_command_list(command_list,1000);
-//     // load_command("hello",0);
-//     // load_command("hi",1);
-//     traverse_dirs(".",command_list,&command_count);
-//     printf("Command count : %d\n",command_count);
-//     for(int i = 0;i < command_count;i++) {
-//         //command_list[i].command();
-//         printf("%s\n",command_list[i].command_variant);
-//     }
-// }

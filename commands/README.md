@@ -17,12 +17,12 @@ commands
         |\_plugin1
         |        \_plugin1.txt
         |        \_plugin1.c
-        |        \_plugin1.so
+        |        \_plugin1.os
         |
         |\_plugin2
         |        \_plugin2.txt
         |        \_plugin2.c
-        |        \_plugin2.so
+        |        \_plugin2.os
 
 
 * - mandatory file

@@ -1,6 +1,6 @@
 #include "broker_info.h"
 
-
+// if host or port are not configured - politely DEMAND that user inputs data :)
 int get_broker_info(char info[4][128]) {
     FILE* info_file = fopen("./mqtt-broker-info/mqtt-broker.txt","r");
     if(info_file == NULL) {
@@ -27,15 +27,57 @@ int get_broker_info(char info[4][128]) {
             fscanf(info_file,"%127s",info[3]);
         }
     }
-    if(strcmp(info[2],"")==0) {
-        printf("Please configure your mqtt host !\n");
-        return -1;
-    }
 
-    if(strcmp(info[3],"")==0) {
-        printf("Please configure your mqtt port !\n");
-        return -1;
-    }
+    
+    
     fclose(info_file);
+    return 0;
+}
+
+int add_broker() {
+    FILE* ptr = fopen("./mqtt-broker-info/mqtt-broker.txt","r");
+    // if files exists, check if mandatory fields are filled
+    if(ptr != NULL) {
+        fclose(ptr);
+        return 0;
+    }
+    
+    // if file doesn't exist, create one and ask user to input info
+    
+    printf("Alles good\n");
+    FILE *ptr2 = fopen("./mqtt-broker-info/mqtt-broker.txt","w");
+    char username[100];
+    char password[100];
+    char host[100];
+    char port[16];
+    printf("Enter username (Press enter to skip)\n");
+    fgets(username,sizeof(username),stdin);
+    fprintf(ptr2,"username %s\n",username);
+
+    printf("Enter password (Press enter to skip)\n");
+    fgets(password,sizeof(password),stdin);
+    fprintf(ptr2,"password %s\n",password);
+
+    // cannot be empty
+    printf("Enter host (Mandatory)\n");
+    do {
+        fgets(host,sizeof(host),stdin);
+        if(strlen(host) == 1) {
+            printf("Hose cannot be empty ! Enter valid host !\n");
+        }
+    } while(strlen(host) == 1);
+    fprintf(ptr2,"host %s\n",host);
+
+    // cannot be empty
+    printf("Enter port (Mandatory)\n");
+    do {
+        fgets(port,sizeof(port),stdin);
+        if(strlen(port) == 1) {
+            printf("Port cannot be empty ! Enter valid port(default - 1883) !\n");
+        }
+    } while(strlen(port) == 1);
+    fprintf(ptr2,"port %s\n",port);
+
+    fclose(ptr2);
     return 0;
 }

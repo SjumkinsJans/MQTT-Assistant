@@ -81,8 +81,7 @@ void init_device_name_pair(struct device_name_pair *pairs,struct Device *devices
             printf("Config file for %s couldnt be found or openend !\n",devices[i].t);
             continue;
         }
-
-        
+       
         char buff[128];
         int current_relay;
         while(fgets(buff,MAX_LINE_LEN,ptr) && buff[0] != '#') {

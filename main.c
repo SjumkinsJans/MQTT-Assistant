@@ -134,6 +134,13 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
                 break;
             }
         }
+
+        // check if it is reload command. It is easier to call it there.
+        if(strcmp(message,"reload") == 0) {
+            printf("Reloading plugins !\n");
+            traverse_dirs("./commands",command_list,&command_count);
+        }
+
     }
 
     //answers from broker.
@@ -174,6 +181,7 @@ int main() {
 
     // connect to broker
     char info[4][128];
+    add_broker();
     int ans = get_broker_info(info);
     if(ans == -1) {
         return -1;

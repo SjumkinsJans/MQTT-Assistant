@@ -1,0 +1,4 @@
+username alex
+password 3RrG-+H+WG
+host e.tgt.lv
+port 1883

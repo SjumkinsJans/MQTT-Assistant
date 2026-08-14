@@ -6,3 +6,4 @@ name/назвать (device last 6 MAC characters) (relay. If nothing is entered
 forget/забыть (name)  
 turnon/включить (given name)  
 turnof/выключить (given name)  
+reload  

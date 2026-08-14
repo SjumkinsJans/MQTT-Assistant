@@ -11,26 +11,74 @@ int get_broker_info(char info[4][128]) {
     for(int i = 0;i < 4;i++) {
         strcpy(info[i],"");
     }
-    char buff[128];
-    while(fscanf(info_file,"%127s",buff) == 1) {
-        //printf("%s\n",buff);
-        if(strcmp("username",buff) == 0) {
-            fscanf(info_file,"%127s",info[0]);
-        }
-        else if(strcmp("password",buff) == 0) {
-            fscanf(info_file,"%127s",info[1]);   
-        }
-        else if(strcmp("host",buff) == 0) {
-            fscanf(info_file,"%127s",info[2]);
-        }
-        else if(strcmp("port",buff) == 0) {
-            fscanf(info_file,"%127s",info[3]);
+    char line[256];
+
+    while (fgets(line, sizeof(line), info_file))
+    {
+        char key[128];
+        char value[128];
+
+        if (sscanf(line, "%127s %127s", key, value) == 2)
+        {
+            if (strcmp(key, "username") == 0)
+                strcpy(info[0], value);
+
+            else if (strcmp(key, "password") == 0)
+                strcpy(info[1], value);
+
+            else if (strcmp(key, "host") == 0)
+                strcpy(info[2], value);
+
+            else if (strcmp(key, "port") == 0)
+                strcpy(info[3], value);
         }
     }
 
-    
-    
     fclose(info_file);
+    
+    printf("username : %s\n",info[0]);
+    printf("password : %s\n",info[1]);
+    printf("host : %s\n",info[2]);
+    printf("port : %s\n",info[3]);   
+
+    int rewrite = 0;
+    while (strlen(info[2]) == 0) {
+        rewrite = 1;
+        printf("Please enter a host: ");
+
+        if (fgets(info[2], sizeof(info[2]), stdin) == NULL)
+            return -1;
+
+        info[2][strcspn(info[2], "\n")] = '\0';
+
+        if (strlen(info[2]) > 0)
+            break;
+    }
+
+    while (strlen(info[3]) == 0) {
+        rewrite = 1;
+        printf("Please enter port: ");
+
+        if (fgets(info[3], sizeof(info[3]), stdin) == NULL)
+            return -1;
+
+        info[3][strcspn(info[3], "\n")] = '\0';
+
+        if (strlen(info[3]) > 0)
+            break;
+    }
+
+    if(rewrite) {
+        FILE *ptr = fopen("./mqtt-broker-info/mqtt-broker.txt","w");
+        fprintf(ptr,"username %s\n",info[0]);
+        fprintf(ptr,"password %s\n",info[1]);
+        fprintf(ptr,"host %s\n",info[2]);
+        fprintf(ptr,"port %s\n",info[3]);
+        fclose(ptr);
+    }
+ 
+    
+    
     return 0;
 }
 

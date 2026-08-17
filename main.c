@@ -5,7 +5,9 @@ struct device_name_pair *device_name;
 int max_device_count;
 int curr_device_count;
 struct Command *command_list;
-int command_count;
+int curr_command_count;
+int max_command_count;
+int max_device_name_pairs;
 
 
 void subscribe(struct mosquitto *mosq,char topic[]) {
@@ -47,7 +49,7 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 }
 
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg){
-    printf("Receiveddd msg : %s %s\n\n", msg->topic,(char *)msg->payload);
+    //printf("Receiveddd msg : %s %s\n\n", msg->topic,(char *)msg->payload);
     
     //device discovery
     if(strncmp(msg->topic,"tasmota/discovery",17)==0) {
@@ -65,72 +67,83 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
             return;
         }
         //printf("Is a config\n");
-        for(int i = 0;i < max_device_count;i++) {
-            if(devices[i].subscribed == false) {
-                cJSON *json = cJSON_Parse((char *)msg->payload);
-                //printf("Parsing json\n");
-                cJSON *t = cJSON_GetObjectItem(json, "t");
-                //printf("Parsing t : %s\n",t->valuestring);
-                cJSON *dn = cJSON_GetObjectItem(json, "dn");
-                //printf("Parsing dn\n");
-                cJSON *fn = cJSON_GetObjectItem(json, "fn"); // an array
-
-                create_dir("devices");
-                create_file(t->valuestring,dn->valuestring);
-                for(int j = 0;j < 8;j++) {
-                    cJSON *fname = cJSON_GetArrayItem(fn,j);
-                    if(!cJSON_IsNull(fname)) {
-                        //printf("%s\n",fname->valuestring);
-                        strcpy(devices[i].fn[j],fname->valuestring);
-                        //add_relay_name(t->valuestring,fname->valuestring,j+1);
-                    }
-                }
-                
-                strcpy(devices[i].t,t->valuestring);
-                strcpy(devices[i].dn,dn->valuestring);
-                
-
-                // printf("value test %s %s \n",devices[i].t,t->valuestring);
-                // printf("dn test %s %s \n",devices[i].dn,dn->valuestring);
-                
-                devices[i].subscribed = true;
-                char subscribe_to[64];
-                snprintf(subscribe_to,sizeof(subscribe_to),"+/%s/#",t->valuestring);
-                subscribe(mosq,subscribe_to);
-                curr_device_count++;
-                // Map names to ids' ?
-                
-                // Notify about new device
-
-                cJSON_Delete(json);
+        
+        //if couldn't find place for device - realloc AND init memory !
+        int found = 0;
+        int pos = 0;
+        for(pos;pos < max_device_count;pos++) {
+            if(devices[pos].subscribed == false) {
+                found = 1;
                 break;
             }
         }
+        
+        if(!found) {
+            size_t old_count = max_device_count;
+            max_device_count +=10;
+            size_t new_count = max_device_count;
+            printf("on_message : Allocating more memory for devices !\n");
+            
+            struct Device *tmp = (struct Device*)realloc(devices,max_device_count*sizeof(struct Device));
+            if(tmp != NULL) {
+                devices = tmp;
+                memset(devices+old_count,0,(new_count-old_count)*sizeof(*devices));
+            }
+
+            printf("on_message : memory reallocated : %d\n",max_device_count);
+        }
+
+        // add device
+        cJSON *json = cJSON_Parse((char *)msg->payload);
+        //printf("Parsing json\n");
+        cJSON *t = cJSON_GetObjectItem(json, "t");
+        //printf("Parsing t : %s\n",t->valuestring);
+        cJSON *dn = cJSON_GetObjectItem(json, "dn");
+        //printf("Parsing dn\n");
+        cJSON *fn = cJSON_GetObjectItem(json, "fn"); // an array
+
+        create_dir("devices");
+        create_file(t->valuestring,dn->valuestring);
+        for(int j = 0;j < 8;j++) {
+            cJSON *fname = cJSON_GetArrayItem(fn,j);
+            if(!cJSON_IsNull(fname)) {
+                //printf("%s\n",fname->valuestring);
+                strcpy(devices[pos].fn[j],fname->valuestring);
+                //add_relay_name(t->valuestring,fname->valuestring,j+1);
+            }
+        }
+        
+        strcpy(devices[pos].t,t->valuestring);
+        strcpy(devices[pos].dn,dn->valuestring);
+        
+
+        // printf("value test %s %s \n",devices[i].t,t->valuestring);
+        // printf("dn test %s %s \n",devices[i].dn,dn->valuestring);
+        
+        devices[pos].subscribed = true;
+        char subscribe_to[64];
+        snprintf(subscribe_to,sizeof(subscribe_to),"+/%s/#",t->valuestring);
+        subscribe(mosq,subscribe_to);
+        curr_device_count++;
+        // Notify about new device
+
+        cJSON_Delete(json);
+
+
         return;
     }
 
-    // commands for now :
-    // name *t* *name*
+    // commands
     if(strncmp(msg->topic,"assistant",9) == 0) {
-        //printf("Command received yo !\n");
-        //printf("Receiveddd msg : %s %s\n\n", msg->topic,(char *)msg->payload);
-        
-        //command , relay_name
-        // включить *имя*
-        // выключить *имя*
-        // назвать *t* *relay* *имя* . 
-        // забыть *имя*
         char message[256];
         strcpy(message,(char*)msg->payload);
-        //printf("Payload : %s\n",message);
-        //char *command = strtok(message," ");
         
-        for(int i = 0;i < command_count;i++) {
+        for(int i = 0;i < curr_command_count;i++) {
             if(find_substring(message,command_list[i].command_variant) >= 0) {
                 printf("Command found: %s\n",command_list[i].command_variant);
 
                 // execute command
-                command_list[i].command(mosq,message,command_list[i].command_variant,device_name,MAX_LINES*max_device_count);
+                command_list[i].command(mosq,message,command_list[i].command_variant,&device_name,max_device_name_pairs);
                 break;
             }
         }
@@ -138,7 +151,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
         // check if it is reload command. It is easier to call it there.
         if(strcmp(message,"reload") == 0) {
             printf("Reloading plugins !\n");
-            traverse_dirs("./commands",command_list,&command_count);
+            traverse_dirs("./commands",&command_list,&curr_command_count,&max_command_count);
         }
 
     }
@@ -162,8 +175,12 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 int main() {
     max_device_count = 20;
     devices = (struct Device*)calloc(max_device_count,sizeof(struct Device));
+    if(devices == NULL) {
+        printf("devices : Couldn't allocate memory !\n");
+        return -1;
+    }
     curr_device_count = 0;
-    init_devices(devices,max_device_count);
+    //init_devices(devices,max_device_count);
 
     int rc;
     struct mosquitto* mosq;
@@ -219,17 +236,32 @@ int main() {
 
     
     // read all names given to devices and save them to aray
-    device_name = (struct device_name_pair*)calloc(MAX_LINES*max_device_count,sizeof(struct device_name_pair));
-    init_device_name_pair(device_name,devices,MAX_LINES*max_device_count,curr_device_count);
+    max_device_name_pairs = 10;
+    device_name = (struct device_name_pair*)calloc(max_device_name_pairs,sizeof(struct device_name_pair));
+    if(device_name == NULL) {
+        printf("device_name : Couldn't allocate memory !\n");
+        return -1;
+    }    
+    init_device_name_pair(device_name,devices,max_device_name_pairs,curr_device_count);
 
     // load in available commands
-    command_count = 0;
-    command_list = (struct Command*)calloc(1000,sizeof(struct Command));
-    init_command_list(command_list,1000);
-    traverse_dirs("./commands",command_list,&command_count);
-    printf("Command count : %d\n",command_count);
+    curr_command_count = 0;
+    max_command_count = 1000;
+    command_list = (struct Command*)calloc(max_command_count,sizeof(struct Command));
+    if(command_list == NULL) {
+        printf("command_list : Couldn't allocate memory !\n");
+        return -1;
+    }    
+    //init_command_list(command_list,1000);
+    traverse_dirs("./commands",&command_list,&curr_command_count,&max_command_count);
 
+    // for(int i = 0; i < 50;i++) {
+    //     printf("%s %s\n",device_name[i].name,device_name[i].t);
+    // }
 
+    printf("Command count : %d\n",curr_command_count);
+
+    printf("curr device count : %d\n",curr_device_count);
     //topic device_id payload
     while(1) {
         //printf("%d - dev count \n",curr_device_count);
@@ -253,5 +285,6 @@ int main() {
     mosquitto_lib_cleanup();
     free(devices);
     free(device_name);
+    free(command_list);
     return 0;
 }

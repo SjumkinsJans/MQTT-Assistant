@@ -9,7 +9,7 @@
 #include "../mqtt-broker-info/broker_info.h"
 #include "../devices/device_name_control.h"
 
-typedef void (*plugin_func)(struct mosquitto* mosq,char * message,char * command,struct device_name_pair *device_name,int max_pair_count);
+typedef void (*plugin_func)(struct mosquitto* mosq,char * message,char * command,struct device_name_pair **device_name,int max_pair_count);
 struct Command {
     char command_variant[64];
     plugin_func command;
@@ -61,5 +61,5 @@ static void publish(struct mosquitto *mosq,char topic[],char payload[]){
 }
 
 void init_command_list(struct Command *command_list,int command_count);
-int load_command(char *path,struct Command *command_list,int *command_count);
-void traverse_dirs(char *path,struct Command *command_list,int *command_count);
+int load_command(char *path,struct Command **command_list,int *command_count,int *max_command_count);
+void traverse_dirs(char *path,struct Command **command_list,int *command_count,int *max_command_count);

@@ -8,10 +8,10 @@
 // read command names from their .txt files
 // add pairs of {name;function}
 
+// using calloc, so no need for this func
 void init_command_list(struct Command *command_list,int command_count) {
     for(int i = 0;i < command_count;i++) {
         strcpy(command_list[i].command_variant,"");
-
     }
 }
 
@@ -38,8 +38,7 @@ void get_command_name(char *name) {
     strcpy(name,command);
 }
 
-
-int load_command(char *path,struct Command *command_list,int *command_count) {
+int load_command(char *path,struct Command **command_list,int *command_count,int *max_command_count) {
     //printf("Path :%s \n",name);
     void *handle = dlopen(path,RTLD_LAZY);
     if(handle == NULL) {
@@ -75,9 +74,26 @@ int load_command(char *path,struct Command *command_list,int *command_count) {
         //printf("%d %s\n",(*command_count),command_name);
 
         command_name[strlen(command_name)-1] = '\0';
-        command_list[(*command_count)].command = command;
-        strcpy(command_list[(*command_count)].command_variant,command_name);
+        (*command_list)[(*command_count)].command = command;
+        strcpy((*command_list)[(*command_count)].command_variant,command_name);
         (*command_count)++;
+        
+        // if command count == max command count, realloc
+        if(*command_count == *max_command_count) {
+            printf("load command : allocating more memory for commands !\n");
+            size_t old_count = *max_command_count;
+            *max_command_count +=100;
+            size_t new_count = *max_command_count;
+            
+            struct Command *tmp = (struct Command*)realloc(*command_list,*max_command_count*sizeof(struct Command));
+            if(tmp != NULL) {
+                *command_list = tmp;
+                memset((*command_list)+old_count,0,(new_count-old_count)*sizeof(*command_list));
+            }
+
+            printf("load_command : memory reallocated : %d\n",*max_command_count);
+        }
+    
     }
     free(filename);
     fclose(ptr);
@@ -86,7 +102,7 @@ int load_command(char *path,struct Command *command_list,int *command_count) {
     //dlclose(handle);
 }
 
-void traverse_dirs(char *path,struct Command *command_list,int *command_count) {
+void traverse_dirs(char *path,struct Command **command_list,int *command_count,int *max_command_count) {
     DIR *dir = opendir(path);
     struct dirent *de;
     if(dir == NULL) {
@@ -130,10 +146,10 @@ void traverse_dirs(char *path,struct Command *command_list,int *command_count) {
                 continue;
             }
             //printf("%s\n",longpath);
-            load_command(longpath,command_list,command_count);
+            load_command(longpath,command_list,command_count,max_command_count);
             continue;
         }
-        traverse_dirs(longpath,command_list,command_count);
+        traverse_dirs(longpath,command_list,command_count,max_command_count);
         free(longpath);
     }
 

@@ -7,6 +7,16 @@
 #include "mqtt-broker-info/broker_info.h"
 #include "commands/command_control.h"
 //#include "devices/device_name_control.h" // imported from command_control.h
+
+// using calloc, so no need for this func
+void init_devices(struct Device* devices,int max_device_count) {
+    for(int i = 0;i < max_device_count;i++) {
+        for(int j = 0;j < 8;j++) {
+            strcpy(devices[i].fn[j],"");
+        }
+    }
+}
+
 void print_device_list(struct Device *devices,int max_device_count) {
     printf("Printing device list : \n");
     for(int i = 0;i < max_device_count;i++) {
@@ -23,14 +33,6 @@ void print_device_list(struct Device *devices,int max_device_count) {
         }
     }
     return;
-}
-
-void init_devices(struct Device* devices,int max_device_count) {
-    for(int i = 0;i < max_device_count;i++) {
-        for(int j = 0;j < 8;j++) {
-            strcpy(devices[i].fn[j],"");
-        }
-    }
 }
 
 int find_substring(char * source,char * substring) {

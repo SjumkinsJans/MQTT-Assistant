@@ -8,7 +8,7 @@ struct Command *command_list;
 int curr_command_count;
 int max_command_count;
 int max_device_name_pairs;
-
+int assistant_loop = 1;
 
 void subscribe(struct mosquitto *mosq,char topic[]) {
     int rc;
@@ -143,7 +143,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
                 printf("Command found: %s\n",command_list[i].command_variant);
 
                 // execute command
-                command_list[i].command(mosq,message,command_list[i].command_variant,&device_name,max_device_name_pairs);
+                command_list[i].command(mosq,message,command_list[i].command_variant,&device_name,&max_device_name_pairs);
                 break;
             }
         }
@@ -172,7 +172,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
 }
 
 // mosq topic payload
-int main() {
+int init_assistant() {
     max_device_count = 20;
     devices = (struct Device*)calloc(max_device_count,sizeof(struct Device));
     if(devices == NULL) {
@@ -212,6 +212,19 @@ int main() {
     if(rc != MOSQ_ERR_SUCCESS){
 		mosquitto_destroy(mosq);
 		fprintf(stderr, "Client Error: %s\n", mosquitto_strerror(rc));
+        printf("Looks like you couldn't connect to broken with information provided ! Perhaps there is an error.\n");
+        printf("Would you like to enter the information anew ? y/n\n");
+        char ans[10];
+        do {
+            fgets(ans,sizeof(ans),stdin);
+        } while(ans[0] != 'y' && ans[0] != 'n');
+        
+        if(ans[0] == 'y') {
+            // format mqtt-broker.txt file
+            remove("./mqtt-broker-info/mqtt-broker.txt");
+            assistant_loop = 0;
+            return 0;
+        }
 		return 1;
 	}
 
@@ -236,13 +249,13 @@ int main() {
 
     
     // read all names given to devices and save them to aray
-    max_device_name_pairs = 10;
+    max_device_name_pairs = 1000;
     device_name = (struct device_name_pair*)calloc(max_device_name_pairs,sizeof(struct device_name_pair));
     if(device_name == NULL) {
         printf("device_name : Couldn't allocate memory !\n");
         return -1;
     }    
-    init_device_name_pair(device_name,devices,max_device_name_pairs,curr_device_count);
+    init_device_name_pair(&device_name,devices,&max_device_name_pairs,curr_device_count);
 
     // load in available commands
     curr_command_count = 0;
@@ -255,9 +268,6 @@ int main() {
     //init_command_list(command_list,1000);
     traverse_dirs("./commands",&command_list,&curr_command_count,&max_command_count);
 
-    // for(int i = 0; i < 50;i++) {
-    //     printf("%s %s\n",device_name[i].name,device_name[i].t);
-    // }
 
     printf("Command count : %d\n",curr_command_count);
 
@@ -286,5 +296,23 @@ int main() {
     free(devices);
     free(device_name);
     free(command_list);
+    return 0;
+}
+
+int main() {
+    int val = -1;
+    while(1) {
+        assistant_loop = 1;
+        while(assistant_loop) {
+            val = init_assistant();
+            if (val != 0) {
+                break;
+            }
+        }
+        if(val == -1) {
+            break;
+        }
+    }
+    
     return 0;
 }

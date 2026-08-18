@@ -9,7 +9,7 @@
 #include "../mqtt-broker-info/broker_info.h"
 #include "../devices/device_name_control.h"
 
-typedef void (*plugin_func)(struct mosquitto* mosq,char * message,char * command,struct device_name_pair **device_name,int max_pair_count);
+typedef void (*plugin_func)(struct mosquitto* mosq,char * message,char * command,struct device_name_pair **device_name,int *max_pair_count);
 struct Command {
     char command_variant[64];
     plugin_func command;

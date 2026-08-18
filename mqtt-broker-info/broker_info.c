@@ -92,7 +92,6 @@ int add_broker() {
     
     // if file doesn't exist, create one and ask user to input info
     
-    printf("Alles good\n");
     FILE *ptr2 = fopen("./mqtt-broker-info/mqtt-broker.txt","w");
     char username[100];
     char password[100];

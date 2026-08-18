@@ -70,7 +70,7 @@ int get_file_content(char * filename, char lines[MAX_LINES][MAX_LINE_LEN]) {
     return where_names_end;
 }
 
-void init_device_name_pair(struct device_name_pair *pairs,struct Device *devices,int max_pairs,int device_count) {
+void init_device_name_pair(struct device_name_pair **pairs,struct Device *devices,int *max_pairs,int device_count) {
     int counter = 0;
     for(int i = 0;i < device_count;i++) {
         char txt[128];
@@ -88,12 +88,26 @@ void init_device_name_pair(struct device_name_pair *pairs,struct Device *devices
             if(buff[0] == '*') {
                 current_relay = buff[6];
                 while(fgets(buff,MAX_LINE_LEN,ptr) && buff[0] != '\n') {
-                    pairs[counter].relay = current_relay-'0';
+                    (*pairs)[counter].relay = current_relay-'0';
                     int index_of_newline = strcspn(buff,"\n"); 
                     buff[index_of_newline] = '\0';
-                    strcpy(pairs[counter].name,buff);
-                    strcpy(pairs[counter].t,devices[i].t);
+                    strcpy((*pairs)[counter].name,buff);
+                    strcpy((*pairs)[counter].t,devices[i].t);
                     counter++;
+                    if(counter == (*max_pairs)) {
+                        //realloc
+                        printf("init_device_name_pair : allocating more memory for device_name pairs !\n");
+                        size_t old_count = *max_pairs;
+                        *max_pairs +=100;
+                        size_t new_count = *max_pairs;
+
+                        struct device_name_pair *tmp = (struct device_name_pair*)realloc(*pairs,*max_pairs*sizeof(struct device_name_pair));
+                        if(tmp != NULL) {
+                            *pairs = tmp;
+                            memset((*pairs)+old_count,0,(new_count-old_count)*sizeof(**pairs));
+                        }
+                        printf("init_device_name_pair : memory reallocated for: %d pairs\n",*max_pairs);
+                    }
                 }
             }
         }
@@ -101,10 +115,10 @@ void init_device_name_pair(struct device_name_pair *pairs,struct Device *devices
         fclose(ptr);
     }
     
-    for(int i = counter;i < max_pairs;i++) {
-        strcpy(pairs[i].name,"");
-        pairs[i].relay = 0;
-        strcpy(pairs[i].t,"");
+    for(int i = counter;i < (*max_pairs);i++) {
+        strcpy((*pairs)[i].name,"");
+        (*pairs)[i].relay = 0;
+        strcpy((*pairs)[i].t,"");
     }
 }
 
@@ -202,20 +216,19 @@ int add_relay_name(char * t,char * name,int relay,struct device_name_pair **pair
     // realloc
     if(!found) {
         printf("add_relay_name : allocating more memory for device_name pairs !\n");
-            size_t old_count = *max_pairs;
-            *max_pairs +=1;
-            size_t new_count = *max_pairs;
-            
-            struct device_name_pair *tmp = (struct device_name_pair*)realloc(*pairs,*max_pairs*sizeof(struct device_name_pair));
-            if(tmp != NULL) {
-                *pairs = tmp;
-                memset((*pairs)+old_count,0,(new_count-old_count)*sizeof(**pairs));
-            }
-
-            printf("load_command : memory reallocated for: %d pairs\n",*max_pairs);
-            (*pairs)[old_count].relay = relay;
-            strcpy((*pairs)[old_count].t,t);
-            strcpy((*pairs)[old_count].name,name); 
+        size_t old_count = *max_pairs;
+        *max_pairs +=100;
+        size_t new_count = *max_pairs;
+        
+        struct device_name_pair *tmp = (struct device_name_pair*)realloc(*pairs,*max_pairs*sizeof(struct device_name_pair));
+        if(tmp != NULL) {
+            *pairs = tmp;
+            memset((*pairs)+old_count,0,(new_count-old_count)*sizeof(**pairs));
+        }
+        printf("add_relay_name : memory reallocated for: %d pairs\n",*max_pairs);
+        (*pairs)[old_count].relay = relay;
+        strcpy((*pairs)[old_count].t,t);
+        strcpy((*pairs)[old_count].name,name); 
     }
     return 0;
 }

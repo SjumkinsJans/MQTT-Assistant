@@ -26,7 +26,7 @@ struct Device {
     bool subscribed;    // is it currently subscribed to broker ?
 };
 
-int create_dir();
+int create_dir(char * filepath);
 int create_file(char * filename,char * device_name);
 int check_file_exist(char * dir,char * filename);
 void init_device_name_pair(struct device_name_pair **pairs,struct Device *devices,int *max_pairs,int device_count);

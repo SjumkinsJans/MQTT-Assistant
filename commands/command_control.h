@@ -9,7 +9,7 @@
 #include "../mqtt-broker-info/broker_info.h"
 #include "../devices/device_name_control.h"
 
-typedef void (*plugin_func)(struct mosquitto* mosq,char * message,char * command,struct device_name_pair **device_name,int *max_pair_count);
+typedef void (*plugin_func)(struct mosquitto* mosq,char * message,char * command,struct device_name_pair **device_name,int *max_pair_count,struct Device **devices,int device_count);
 struct Command {
     char command_variant[64];
     plugin_func command;
@@ -58,6 +58,15 @@ static void publish(struct mosquitto *mosq,char topic[],char payload[]){
     if(rc != MOSQ_ERR_SUCCESS){
 		fprintf(stderr, "Error publishing: %s\n", mosquitto_strerror(rc));
 	}
+}
+
+static int device_type(char *device_t,struct Device *devices,int max_device_count) {
+    for(int i = 0;i < max_device_count;i++) {
+        if(strcmp(devices[i].t,device_t)==0) {
+            return devices[i].type;
+        }
+    }
+    return -1;
 }
 
 void init_command_list(struct Command *command_list,int command_count);

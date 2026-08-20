@@ -282,7 +282,7 @@ int remove_relay_name(char * name,struct device_name_pair *pairs,int max_pairs) 
         strcpy(lines[i],lines[i+1]);
     }
 
-    char path[64];
+    char path[128];
     sprintf(path,"devices/devices/%s.txt",pairs[pos].t);
     FILE *ptr = fopen(path,"w");
     if(ptr == NULL) {

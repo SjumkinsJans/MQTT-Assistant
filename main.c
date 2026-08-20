@@ -49,7 +49,7 @@ void on_subscribe(struct mosquitto *mosq, void *obj, int mid, int qos_count, con
 }
 
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg){
-    //printf("Receiveddd msg : %s %s\n\n", msg->topic,(char *)msg->payload);
+    printf("Receiveddd msg : %s %s\n\n", msg->topic,(char *)msg->payload);
     
     //device discovery
     if(strncmp(msg->topic,"tasmota/discovery",17)==0) {
@@ -133,10 +133,10 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
         // set type to ZIGBEE and set parent to ZBridge
         // for config file/device name, use part of zigbee devices mac/short addr and ZBridge (example :  ZBridge_0x712B)
         // upon sending commands, check whether command is sent to TASMOTA or ZIGBEE, and change topic and payload accordingly
-        printf("%s %s\n",t->valuestring,t->valuestring);
+        //printf("%s %s\n",t->valuestring,t->valuestring);
         if(find_substring(t->valuestring,"ZBridge") >= 0) {
             char topic[256];
-            sprintf(topic,"cmnd/%s/ZbStatus",t->valuestring);
+            sprintf(topic,"cmnd/%s/ZbInfo",t->valuestring);
             publish(mosq,topic,"");
         }
 
@@ -146,10 +146,79 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
         return;
     }
 
-    //if stat/ZBridge_38B2D9/RESULT
+    //if stat/ZBridge_38B2D9/SENSOR
+    if(find_substring(msg->topic,"ZBridge") >= 0 && find_substring(msg->topic,"SENSOR") >= 0) {
+        printf("%s\n",msg->topic);
+        //printf("Received message containing info about ZigBee devices ! \n");
+        char *parent = strtok(msg->topic,"/");
+        parent = strtok(NULL,"/");
+        //printf("parent : %s\n",parent);
+        cJSON *json = cJSON_Parse((char *)msg->payload);
+        cJSON *zbinfo = cJSON_GetObjectItem(json,"ZbInfo");
+        if(!zbinfo) {
+            return;
+        }
+        cJSON *device = cJSON_GetObjectItem(zbinfo,zbinfo->child->string);
+        cJSON *device_shortaddr = cJSON_GetObjectItem(device,"Device");
+        cJSON *device_name = cJSON_GetObjectItem(device,"Name");
+        cJSON *device_mac = cJSON_GetObjectItem(device,"IEEEAddr");
+        if(strcmp(device_shortaddr->valuestring,"0x0000") == 0) {
+            return;
+        }
+        //create config files
+        printf("shortaddr : %s\n",device_shortaddr->valuestring);
+        if(device_name)
+            printf("name : %s\n",device_name->valuestring);
+        printf("mac : %s\n\n",device_mac->valuestring);
+        
+        create_dir("devices");
+        char filename[128];
+        sprintf(filename,"%s_%s",parent,device_shortaddr->valuestring);
+        if(device_name) {
+            create_file(filename,device_name->valuestring);
+        }
+        else {
+            create_file(filename,filename);
+        }
+            
+        // realloc if need arises
+        // add to *devices
+        int found = 0;
+        int pos = 0;
+        for(pos;pos < max_device_count;pos++) {
+            if(devices[pos].subscribed == false) {
+                found = 1;
+                break;
+            }
+        }
+        
+        if(!found) {
+            size_t old_count = max_device_count;
+            max_device_count +=10;
+            size_t new_count = max_device_count;
+            printf("on_message : Allocating more memory for Zigbee devices !\n");
+            
+            struct Device *tmp = (struct Device*)realloc(devices,max_device_count*sizeof(struct Device));
+            if(tmp != NULL) {
+                devices = tmp;
+                memset(devices+old_count,0,(new_count-old_count)*sizeof(*devices));
+            }
 
-    if(find_substring(msg->topic,"ZBridge") >= 0 && find_substring(msg->topic,"RESULT") >= 0) {
-        printf("Received message containing info about ZigBee devices ! \n");
+            printf("on_message : memory reallocated : %d\n",max_device_count);
+        }
+
+        strcpy(devices[pos].t,filename);
+        if(device_name) {
+            strcpy(devices[pos].dn,device_name->valuestring);
+        } else {
+            strcpy(devices[pos].dn,filename);
+        }
+        devices[pos].type = ZIGBEE;
+        strcpy(devices[pos].parent,parent);
+        devices[pos].subscribed = true;
+        
+        curr_device_count++;
+        
     }
     // commands
     if(strncmp(msg->topic,"assistant",9) == 0) {
@@ -161,7 +230,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
                 printf("Command found: %s\n",command_list[i].command_variant);
 
                 // execute command
-                command_list[i].command(mosq,message,command_list[i].command_variant,&device_name,&max_device_name_pairs);
+                command_list[i].command(mosq,message,command_list[i].command_variant,&device_name,&max_device_name_pairs,&devices,max_device_count);
                 break;
             }
         }
@@ -295,6 +364,7 @@ int init_assistant() {
     //     printf("Device : %s TYPE : %d \n",devices[i].t,devices[i].type);
     // }
     
+    print_device_list(devices,max_device_count);
     while(1) {
         //printf("%d - dev count \n",curr_device_count);
         printf("Awaiting command : \n");

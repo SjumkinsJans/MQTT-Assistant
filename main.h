@@ -29,9 +29,14 @@ void print_device_list(struct Device *devices,int max_device_count) {
                     printf("RELAY%d : %s\n",j+1,devices[i].fn[j]);
                 }
             }
-            printf("============\n");
+            printf("type : %d\n",devices[i].type);
+            if(strcmp(devices[i].parent,"") != 0) {
+                printf("parent : %s\n",devices[i].parent);
+            }
+            
         }
     }
+    printf("============\n");
     return;
 }
 

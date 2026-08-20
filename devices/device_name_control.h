@@ -16,16 +16,17 @@ typedef enum {
 } DEVICE_TYPE;
 
 struct device_name_pair {
-    char t[32];
+    char t[48];
     int relay;
     char name[32];
 };
 
 struct Device {
-    char t[32];         // mac addr last 6 syms
+    char t[48];         // mac addr last 6 syms
     char dn[64];        // device name
     char fn[8][64];     // friendly name
     DEVICE_TYPE type;           // tasmota or zigbee
+    char parent[32];
     bool subscribed;    // is it currently subscribed to broker ?
 };
 

@@ -1,7 +1,7 @@
 #include "../command_control.h"
 
 // message should comes in format : *t* *relay* *name* 
-int name(struct mosquitto* mosq,char * message,char * command,struct device_name_pair **device_name,int *max_pair_count) {
+int name(char * message,char * command,struct device_name_pair **device_name,int *max_pair_count) {
     char *payload = remove_trailing_whitespace(trim(strremove(message,command)));
     char* t = strtok(payload," ");
     char *a = strtok(NULL," ");

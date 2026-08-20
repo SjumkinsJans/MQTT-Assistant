@@ -10,6 +10,10 @@
 #define MAX_LINE_LEN 64
 #define RELAY_COUNT 8
 
+typedef enum {
+    TASMOTA = 1,
+    ZIGBEE = 2,
+} DEVICE_TYPE;
 
 struct device_name_pair {
     char t[32];
@@ -21,8 +25,7 @@ struct Device {
     char t[32];         // mac addr last 6 syms
     char dn[64];        // device name
     char fn[8][64];     // friendly name
-                        // add user defined names ?
-                        // add relay counter ? or count manually each time ?
+    DEVICE_TYPE type;           // tasmota or zigbee
     bool subscribed;    // is it currently subscribed to broker ?
 };
 

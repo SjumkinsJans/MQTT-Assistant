@@ -115,7 +115,7 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
         
         strcpy(devices[pos].t,t->valuestring);
         strcpy(devices[pos].dn,dn->valuestring);
-        
+        devices[pos].type = TASMOTA;
 
         // printf("value test %s %s \n",devices[i].t,t->valuestring);
         // printf("dn test %s %s \n",devices[i].dn,dn->valuestring);
@@ -127,12 +127,30 @@ void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_messag
         curr_device_count++;
         // Notify about new device
 
+        // if it is ZBridge, send ZbStatus with empty payload, receive the message and payload, 
+        // iterate thru devices that were received in the message
+        // create config file and add them to *devices
+        // set type to ZIGBEE and set parent to ZBridge
+        // for config file/device name, use part of zigbee devices mac/short addr and ZBridge (example :  ZBridge_0x712B)
+        // upon sending commands, check whether command is sent to TASMOTA or ZIGBEE, and change topic and payload accordingly
+        printf("%s %s\n",t->valuestring,t->valuestring);
+        if(find_substring(t->valuestring,"ZBridge") >= 0) {
+            char topic[256];
+            sprintf(topic,"cmnd/%s/ZbStatus",t->valuestring);
+            publish(mosq,topic,"");
+        }
+
         cJSON_Delete(json);
 
-
+        
         return;
     }
 
+    //if stat/ZBridge_38B2D9/RESULT
+
+    if(find_substring(msg->topic,"ZBridge") >= 0 && find_substring(msg->topic,"RESULT") >= 0) {
+        printf("Received message containing info about ZigBee devices ! \n");
+    }
     // commands
     if(strncmp(msg->topic,"assistant",9) == 0) {
         char message[256];
@@ -273,6 +291,10 @@ int init_assistant() {
 
     printf("curr device count : %d\n",curr_device_count);
     //topic device_id payload
+    // for(int i = 0;i < curr_device_count;i++) {
+    //     printf("Device : %s TYPE : %d \n",devices[i].t,devices[i].type);
+    // }
+    
     while(1) {
         //printf("%d - dev count \n",curr_device_count);
         printf("Awaiting command : \n");
